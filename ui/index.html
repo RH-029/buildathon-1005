@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TravelMind — Travel that remembers you</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header><a class="brand" href="./">Travel<span class="brand-mind">Mind</span><span class="brand-spark" aria-hidden="true">✦</span></a><span class="badge" id="service-status" role="status">CONNECTING…</span></header>
+  <main>
+    <section class="intro">
+      <div class="intro-copy"><p class="eyebrow">LESS SEARCHING. MORE DISCOVERING.</p><h1>Your next adventure,<br><em>a little more you.</em></h1><p>Find experiences that fit your mood. Share what you loved, and make the next trip even better.</p><div class="travel-tags" aria-label="Travel inspiration"><span>☀ A little sunshine</span><span>✦ Local discoveries</span><span>♡ Your kind of trip</span></div></div>
+      <div class="hero-art" aria-hidden="true"><span class="art-sticker">Oh, the places you'll go ↗</span><div class="postcard"><img src="assets/travel-postcard.png" alt="" width="1536" height="1024" fetchpriority="high"><span>Collect moments, find your next adventure.</span></div><span class="art-spark">✦</span></div>
+    </section>
+    <div class="workspace">
+      <form id="trip-form" class="panel">
+        <div class="section-heading"><span class="step">01</span><h2>Make it your trip</h2></div>
+        <label for="origin">Where are you leaving from?</label><input id="origin" name="origin" value="Mountain View" list="origins" required maxlength="200"><datalist id="origins"><option value="Mountain View"><option value="Palo Alto"><option value="Sunnyvale"></datalist>
+        <small id="travel-source">The planner's local catalog covers Bay Area outings.</small>
+        <label for="trip-date">Outing date</label><input id="trip-date" name="date" type="date" required>
+        <div class="fields"><div><label for="start-time">Leave at</label><input id="start-time" name="start" type="time" value="13:00" required></div><div><label for="end-time">Home by</label><input id="end-time" name="end" type="time" value="19:00" required></div></div><small>All times are Pacific (America/Los_Angeles). Return on the same day.</small>
+        <div class="fields"><div><label for="budget">Budget per person ($)</label><input id="budget" name="budget" type="number" min="0" max="10000" step="0.01" value="35" required></div><div><label for="energy">Energy today</label><select id="energy" name="energy"><option value="low">Low · take it easy</option><option value="medium" selected>Medium · balanced</option><option value="high">High · adventure</option></select></div></div>
+        <label class="checkline"><input type="checkbox" name="allow_repeats">Include previously completed outings</label>
+        <div class="traveler-heading"><h3>Your travel crew</h3><button id="add-traveler" type="button" class="secondary">+ Add traveler</button></div>
+        <small>Each person's memories and requirements stay separate. Add up to 8 travelers.</small>
+        <div id="travelers"></div>
+        <button id="plan-button" class="primary" type="submit">Find our experiences <span>↗</span></button>
+        <p class="hint">Uses Planner + hosted Mem0 · No browser-local fallback</p>
+      </form>
+      <section class="results" aria-labelledby="results-title"><div class="section-heading"><span class="step">02</span><h2 id="results-title">Your shortlist</h2></div><p id="status" role="status" aria-live="polite">A good trip starts with what you love.</p><div id="memory-summary"></div><div id="cards"><div class="empty"><div class="mini-postcard" aria-hidden="true"><img src="assets/travel-postcard.png" alt="" width="1536" height="1024" loading="lazy"></div><h3>A whole city of possibilities.</h3><p>Tell us where you're going.<br>We'll help you find your kind of day.</p></div></div></section>
+    </div>
+  </main>
+  <footer>TravelMind · Built for curious travelers. <span>Preferences → Experiences → Better next time</span></footer>
+  <template id="traveler-template">
+    <fieldset class="traveler-editor"><legend class="traveler-title">Traveler</legend>
+      <div class="fields"><div><label data-for="id">Traveler ID</label><input data-field="id" required maxlength="128" placeholder="e.g. demo-jamie"></div><div><label data-for="name">Name</label><input data-field="name" required maxlength="200" placeholder="Your name"></div></div>
+      <div class="interest-label">Their interests</div><div class="interests traveler-interests"></div>
+      <div class="fields"><div><label data-for="drive">Max drive each way (min)</label><input data-field="drive" type="number" min="0" max="180" step="1" value="30" required></div><div><label data-for="intensity">Activity limit</label><select data-field="intensity"><option value="0">Resting</option><option value="1">Gentle</option><option value="2" selected>Moderate</option><option value="3">Strenuous</option></select></div></div>
+      <label data-for="budget">Personal budget cap ($, optional)</label><input data-field="budget" type="number" min="0" max="10000" step="0.01" placeholder="Use group budget">
+      <label class="checkline"><input data-field="vegetarian" type="checkbox">Vegetarian picnic required</label><label class="checkline"><input data-field="step-free" type="checkbox">Step-free route required</label>
+      <div class="traveler-actions"><button type="button" class="secondary remember-button">Remember interests</button><button type="button" class="text-button remove-traveler">Remove</button></div>
+      <p class="traveler-status" role="status"></p>
+    </fieldset>
+  </template>
+</body>
+</html>

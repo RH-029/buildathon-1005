@@ -20,7 +20,33 @@ D:\mem0\
     hatch.toml         Local Hatch configuration
 ```
 
-## Run the demo
+## Run the travel UI
+
+```powershell
+cd D:\mem0\buidathon-1005
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-ui.txt
+# Set MEM0_API_KEY in .env or .env.local locally, then:
+.\.venv\Scripts\python.exe ui_server.py
+```
+
+Open http://localhost:3000. Stop the server with Ctrl+C.
+The UI calls the real Planner and hosted Mem0 through one local integration server.
+`.env.local` takes priority over `.env`; environment variables take priority over both.
+An unavailable Memory service returns an error and never falls back to local storage.
+The server serves only `ui/`, keeping local environment files outside its document root.
+Use `demo-jamie` / `demo-taylor` to retrieve the existing fictional profiles, or enter
+your own traveler IDs. Profile writes happen only through **Remember interests**;
+outing feedback requires an explicit completion confirmation.
+
+Planner venue facts remain a sample catalog. Default drive estimates support
+Mountain View, Palo Alto, and Sunnyvale. Optional `GOOGLE_MAPS_API_KEY` enables live
+Google Routes estimates, including billable requests; venue facts remain sample.
+All date/time inputs use Pacific time. See [UI-CONTRACT.md](UI-CONTRACT.md).
+UI work belongs to `codex/ui`. This loopback service is intended for local development.
+To restart an already installed environment, run only the final command above.
+
+## Run the memory demo
 
 ```powershell
 cd D:\mem0\buidathon-1005
