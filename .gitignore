@@ -1,0 +1,9 @@
+.venv/
+.hatch/
+__pycache__/
+*.py[cod]
+data/
+.env
+.env.*
+!.env.example
+.pytest_cache/
