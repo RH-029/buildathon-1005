@@ -1,4 +1,4 @@
-"""Local UI integration service. No mock memories or frontend recommendations."""
+"""TravelMind UI and API service for local use and a small hosted demo."""
 
 import argparse
 from datetime import datetime
@@ -76,7 +76,26 @@ class UIService:
             self.memory.close()
 
 
-def handler_for(service):
+def public_origin(value):
+    """Validate the configured origin instead of trusting forwarded headers."""
+    if not value:
+        return None
+    parsed = urlsplit(value)
+    if (parsed.scheme not in {"http", "https"} or not parsed.hostname or
+            parsed.username or parsed.password or parsed.path not in {"", "/"} or
+            parsed.query or parsed.fragment):
+        raise ValueError("public-url must be an http(s) origin without a path, query, or credentials.")
+    try:
+        parsed.port
+    except ValueError:
+        raise ValueError("public-url has an invalid port.") from None
+    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
+
+def handler_for(service, public_url=None):
+    configured_origin = public_origin(public_url)
+    configured_host = urlsplit(configured_origin).netloc.casefold() if configured_origin else None
+
     class Handler(SimpleHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -95,12 +114,22 @@ def handler_for(service):
             self.wfile.write(payload)
 
         def local_host(self):
-            # Protect the unauthenticated loopback service from DNS rebinding.
-            return self.headers.get("Host") in {f"localhost:{self.server.server_port}", f"127.0.0.1:{self.server.server_port}"}
+            # Local aliases plus one configured external host, never a wildcard.
+            host = self.headers.get("Host", "").casefold()
+            return host in {f"localhost:{self.server.server_port}",
+                            f"127.0.0.1:{self.server.server_port}", configured_host}
+
+        def same_origin(self):
+            origin = self.headers.get("Origin")
+            if origin is None:
+                return True  # CLI calls and Render health checks omit Origin.
+            host = self.headers.get("Host", "").casefold()
+            expected = configured_origin if host == configured_host else f"http://{host}"
+            return origin == expected
 
         def do_GET(self):
             if not self.local_host():
-                self.reply(403, {"error": "Use the local TravelMind address."})
+                self.reply(403, {"error": "Use the configured TravelMind address."})
                 return
             if self.path == "/api/health":
                 self.reply(200, {"service": "TravelMind", "memory": "hosted_mem0",
@@ -113,8 +142,8 @@ def handler_for(service):
                 super().do_GET()
 
         def do_POST(self):
-            if not self.local_host() or (self.headers.get("Origin") and self.headers["Origin"] != f"http://{self.headers['Host']}"):
-                self.reply(403, {"error": "Use the same local origin as the TravelMind UI."})
+            if not self.local_host() or not self.same_origin():
+                self.reply(403, {"error": "Use the same origin as the TravelMind UI."})
                 return
             if self.path not in {"/api/plan", "/api/memories", "/api/preferences", "/api/feedback"}:
                 self.reply(404, {"error": "Unknown API endpoint."})
@@ -145,10 +174,19 @@ def handler_for(service):
 
 def main():
     parser = argparse.ArgumentParser(description="TravelMind UI with real Planner and hosted Mem0")
-    parser.add_argument("--port", type=int, default=3000)
+    parser.add_argument("--port", type=int, default=os.environ.get("PORT", "3000"))
+    parser.add_argument("--host", default="127.0.0.1", help="Use 0.0.0.0 on Render")
+    parser.add_argument("--public-url", default=os.environ.get("APP_PUBLIC_URL") or os.environ.get("RENDER_EXTERNAL_URL"),
+                        help="External origin; Render supplies RENDER_EXTERNAL_URL automatically")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("port must be between 1 and 65535")
+    try:
+        origin = public_origin(args.public_url)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.host not in {"127.0.0.1", "localhost", "0.0.0.0"}:
+        parser.error("host must be 127.0.0.1, localhost, or 0.0.0.0")
     try:
         from dotenv import load_dotenv
     except ImportError:
@@ -156,10 +194,10 @@ def main():
     load_dotenv(ROOT / ".env.local")
     load_dotenv(ROOT / ".env")
     service = UIService()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(service))
+    server = ThreadingHTTPServer((args.host, args.port), handler_for(service, origin))
     server.daemon_threads = False
     server.timeout = 1
-    print(f"TravelMind: http://localhost:{args.port}", flush=True)
+    print(f"TravelMind: {origin or f'http://localhost:{args.port}'} (listening on {args.host}:{args.port})", flush=True)
     print("Memory: hosted Mem0 (no mock fallback). Catalog: planner sample assumptions.", flush=True)
     if not os.environ.get("MEM0_API_KEY", "").strip():
         print("Set MEM0_API_KEY in .env.local and restart to enable memory and planning.", flush=True)
