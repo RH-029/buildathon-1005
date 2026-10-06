@@ -1,5 +1,7 @@
 # TravelMind — your weekend escape agent
 
+**Live app:** [https://buildathon-1005.onrender.com/](https://buildathon-1005.onrender.com/)
+
 TravelMind turns a free Bay Area afternoon into up to three outings that fit
 your group's time, energy, budget, and requirements. Each recommendation shows
 the memories that influenced it. Save personal interests and completed-outing
