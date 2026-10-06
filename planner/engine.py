@@ -1,6 +1,6 @@
 """Constraint-first planning with deterministic, author-attributed memory ranking."""
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timedelta
 import json
 import math
@@ -24,6 +24,7 @@ class Planner:
         self.catalog = catalog
 
     def plan(self, request):
+        use_temporary_energy = isinstance(request, dict) and "energy" not in request
         if not isinstance(request, PlanRequest):
             request = PlanRequest.from_dict(request)
         query = (f"Weekend outing from {request.origin}; {request.start.isoformat()} to "
@@ -34,9 +35,20 @@ class Planner:
         for traveler in request.travelers:
             try:
                 memories[traveler.id] = normalize_memories(
-                    self.memory.getMemories(traveler.id, query), traveler.id)
+                    self.memory.getMemories(traveler.id, query), traveler.id,
+                    outing=request.start, trip_id=request.trip_id)
             except Exception as error:
                 raise MemoryUnavailable("Memory retrieval failed; retry before generating a personalized plan.") from error
+        # Profile requirements only strengthen constraints; remembered numerical
+        # budgets or deadlines never change explicit structured request fields.
+        travelers = []
+        for traveler in request.travelers:
+            entries = memories[traveler.id]
+            travelers.append(replace(traveler,
+                requires_vegetarian=traveler.requires_vegetarian or any(m["signals"]["requires_vegetarian"] for m in entries),
+                requires_step_free=traveler.requires_step_free or any(m["signals"]["requires_step_free"] for m in entries)))
+        temporary_low_energy = use_temporary_energy and any(m["signals"]["low_energy"] for entries in memories.values() for m in entries)
+        request = replace(request, travelers=tuple(travelers), energy="low" if temporary_low_energy else request.energy)
         slower = any(m["signals"]["slower_pace"] for entries in memories.values() for m in entries)
         buffer_minutes = 45 if slower else 20
         budget = min(request.budget_per_person, *(t.budget_per_person for t in request.travelers))
@@ -45,6 +57,8 @@ class Planner:
         options, excluded = [], []
         for experience in self.catalog["experiences"]:
             reasons = []
+            if len(request.travelers) > experience.get("max_group_size", 8):
+                reasons.append("Group exceeds the catalog's unreserved visit limit.")
             cost = math.ceil((experience["cost_per_person"] +
                               experience["group_cost"] / len(request.travelers)) * 100) / 100
             if cost > budget:
@@ -106,7 +120,8 @@ class Planner:
                  "end": back.isoformat()}])
             score, why, tradeoffs, balances = self._rank(request, experience, memories, outward, inward)
             if request.energy == "low":
-                why.insert(0, {"source": "current_request", "text": "Low energy today: gentle activities only; this is not saved as a permanent preference."})
+                why.insert(0, {"source": "temporary_memory" if temporary_low_energy else "current_request",
+                               "text": "Low energy for this outing: gentle activities only; this is not saved as a permanent preference."})
             options.append({
                 "place_id": experience["id"], "title": experience["title"],
                 "description": experience["description"], "score": round(score, 3),
@@ -130,7 +145,9 @@ class Planner:
                            f"Found {len(selected)} feasible outing(s); hard constraints were kept. See exclusions before changing a constraint.",
                 "data_status": "sample_catalog", "warnings": [self.catalog["notice"]],
                 "memory_context": [{"traveler_id": t.id, "traveler_name": t.name,
-                                    "retrieved_count": len(memories[t.id])} for t in request.travelers],
+                                    "retrieved_count": len(memories[t.id]),
+                                    "effective_requirements": {"requires_vegetarian": t.requires_vegetarian,
+                                                               "requires_step_free": t.requires_step_free}} for t in request.travelers],
                 "excluded": excluded}
 
     @staticmethod
@@ -150,9 +167,11 @@ class Planner:
                 avoids.update(signal["avoided_tags"])
                 short = short or signal["short_drives"]
                 is_visit = signal["visited_place_id"] == experience["id"]
+                new_place = bool(signal["visited_place_id"]) and not is_visit and not request.allow_repeats
                 visited = visited or is_visit
                 relevant = (set(signal["liked_tags"]) & tags or set(signal["avoided_tags"]) & tags or
-                            signal["slower_pace"] or signal["short_drives"] or is_visit)
+                            signal["slower_pace"] or signal["short_drives"] or is_visit or new_place or
+                            signal["requires_vegetarian"] or signal["requires_step_free"] or signal["low_energy"])
                 if relevant:
                     effect = []
                     if set(signal["liked_tags"]) & tags:
@@ -165,9 +184,20 @@ class Planner:
                         effect.append("favors shorter drives")
                     if is_visit:
                         effect.append("repeat allowed" if request.allow_repeats else "completed visit lowers novelty")
+                    if new_place:
+                        effect.append(f"prioritizes a new place over the completed {signal['visited_place_id']} outing")
+                    if signal["requires_vegetarian"]:
+                        effect.append("vegetarian meal requirement checked before ranking")
+                    if signal["requires_step_free"]:
+                        effect.append("step-free requirement checked before ranking")
+                    if signal["low_energy"]:
+                        effect.append("temporary fatigue considered only for this trip; explicit current energy takes priority")
                     why.append({"source": "memory", "memory_id": memory["id"],
                                 "traveler_id": traveler.id, "traveler_name": traveler.name,
-                                "text": memory["text"], "effect": "; ".join(effect)})
+                                "text": memory["text"], "effect": "; ".join(effect),
+                                "kind": memory["kind"], "status": memory["status"],
+                                "trip_id": memory["trip_id"], "created_at": memory["created_at"],
+                                "expiration_date": memory["expiration_date"], "expires_at": memory["expires_at"]})
             # Each person gets one vote regardless of how many memories they have.
             score = len(likes & tags) / max(len(likes), 1)
             score -= len(avoids & tags) / max(len(avoids), 1)
