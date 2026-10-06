@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 from travel_memory import TravelMemory
 from ui_memory_adapter import decode_record, envelope
-from ui_server import UIService, handler_for
+from ui_server import UIService, handler_for, public_origin
 
 
 class UIIntegrationTests(unittest.TestCase):
@@ -112,6 +112,46 @@ class UIIntegrationTests(unittest.TestCase):
             self.assertNotIn(b"private-provider-response", body)
         finally:
             server.shutdown(); server.server_close(); worker.join()
+
+    def test_render_hostname_https_origin_and_health_check(self):
+        origin = "https://travelmind-test.onrender.com"
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(self.service, origin))
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        base = f"http://127.0.0.1:{server.server_port}"
+        def call(path, body=None, request_origin=None, host="travelmind-test.onrender.com"):
+            headers = {"Host": host, "Content-Type": "application/json"}
+            if request_origin:
+                headers["Origin"] = request_origin
+            request = Request(base + path, data=json.dumps(body).encode() if body is not None else None,
+                              headers=headers)
+            try:
+                with urlopen(request, timeout=5) as response:
+                    return response.status, response.read()
+            except HTTPError as error:
+                return error.code, error.read()
+        try:
+            self.assertEqual(call("/")[0], 200)
+            self.assertEqual(call("/api/health")[0], 200)
+            code, body = call("/api/plan", self.request, origin)
+            self.assertEqual(code, 200)
+            self.assertEqual(len(json.loads(body)["options"]), 3)
+            self.assertEqual(call("/api/plan", self.request, "https://foreign.example")[0], 403)
+            self.assertEqual(call("/api/plan", self.request, "http://travelmind-test.onrender.com")[0], 403)
+            self.assertEqual(call("/api/health", host="foreign.example")[0], 403)
+            self.assertEqual(call("/.env.local")[0], 404)
+        finally:
+            server.shutdown(); server.server_close(); worker.join()
+
+    def test_public_origin_validation(self):
+        self.assertIsNone(public_origin(None))
+        self.assertEqual(public_origin("https://travelmind.onrender.com/"), "https://travelmind.onrender.com")
+        for value in ("travelmind.onrender.com", "https://example.com/path",
+                      "https://user:password@example.com", "https://example.com?key=value",
+                      "ftp://example.com", "https://example.com:bad", "https://example.com#fragment"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    public_origin(value)
 
 
 if __name__ == "__main__":
