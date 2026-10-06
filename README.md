@@ -2,6 +2,8 @@
 
 **Live app:** [https://buildathon-1005.onrender.com/](https://buildathon-1005.onrender.com/)
 
+**Demo video:** [Watch the TravelMind demo](https://drive.google.com/file/d/1VrXMz7FrYA1qneZ4AjQ48N8WopnTSmwB/view?usp=sharing)
+
 TravelMind turns a free Bay Area afternoon into up to three outings that fit
 your group's time, energy, budget, and requirements. Each recommendation shows
 the memories that influenced it. Save personal interests and completed-outing
