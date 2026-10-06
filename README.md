@@ -9,6 +9,10 @@ your group's time, energy, budget, and requirements. Each recommendation shows
 the memories that influenced it. Save personal interests and completed-outing
 feedback to hosted Mem0, then generate a new plan to use that history.
 
+Our implementation uses **[Mem0](https://mem0.ai/)** to store and retrieve
+each traveler's preferences and completed-outing feedback. The planner uses
+these memories to personalize future recommendations and explain why they fit.
+
 The complete app is **`ui_server.py`**. It serves the frontend in `ui/` and the
 Python API from one address. You do not need a separate frontend server,
 Node.js build, local database, Docker, or OpenAI key to run this flow.
