@@ -71,6 +71,7 @@ def main():
     parser = argparse.ArgumentParser(description="Local weekend escape planner endpoint")
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--demo", action="store_true", help="Use clearly labeled sample traveler memories")
+    parser.add_argument("--hosted-memory", action="store_true", help="Use the real TravelMemory module and .env.local Mem0 key")
     parser.add_argument("--cors-origin", help="Exact local UI origin, e.g. http://localhost:3000")
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
@@ -81,6 +82,8 @@ def main():
             parser.error("cors-origin must be an exact localhost or 127.0.0.1 HTTP origin")
     memory = None
     module_name = os.environ.get("PLANNER_MEMORY_MODULE")
+    if args.hosted_memory and (args.demo or module_name):
+        parser.error("Choose one of --hosted-memory, --demo, or PLANNER_MEMORY_MODULE")
     if module_name:
         if args.demo:
             parser.error("Choose either --demo or PLANNER_MEMORY_MODULE")
@@ -88,18 +91,25 @@ def main():
     elif args.demo:
         from .demo import DemoMemories
         memory = DemoMemories()
+    elif args.hosted_memory:
+        from .hosted_memory import HostedMemoryProvider
+        memory = HostedMemoryProvider()
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
     planner = Planner(memory_provider=memory,
                       travel_provider=GoogleRoutesProvider(api_key) if api_key else None)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(planner, args.cors_origin))
-    print(f"Planner: http://127.0.0.1:{args.port}/api/plan", flush=True)
-    print(f"Memories: {'demo' if args.demo else module_name or 'empty'}; travel: {'Google Routes' if api_key else 'sample'}; venue facts: sample", flush=True)
+    server = None
     try:
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_for(planner, args.cors_origin))
+        print(f"Planner: http://127.0.0.1:{args.port}/api/plan", flush=True)
+        print(f"Memories: {'Mem0 hosted' if args.hosted_memory else 'demo' if args.demo else module_name or 'empty'}; travel: {'Google Routes' if api_key else 'sample'}; venue facts: sample", flush=True)
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        server.server_close()
+        if server is not None:
+            server.server_close()
+        if args.hosted_memory:
+            memory.close()
 
 
 if __name__ == "__main__":

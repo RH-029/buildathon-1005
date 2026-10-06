@@ -6,7 +6,7 @@ import math
 from zoneinfo import ZoneInfo
 
 PACIFIC = ZoneInfo("America/Los_Angeles")
-TAGS = {"nature", "scenic", "quiet", "art", "food", "walking", "hiking", "social"}
+TAGS = {"nature", "scenic", "quiet", "art", "food", "walking", "hiking", "social", "gardens", "photography"}
 
 
 class ValidationError(ValueError):
@@ -63,11 +63,12 @@ class PlanRequest:
     allow_repeats: bool
     travelers: tuple
     transport: str = "car"
+    trip_id: str = ""
 
     @classmethod
     def from_dict(cls, data):
         fields(data, {"origin", "start", "end", "budget_per_person", "energy",
-                      "allow_repeats", "travelers", "transport"}, "request")
+                      "allow_repeats", "travelers", "transport", "trip_id"}, "request")
         origin = string(data.get("origin"), "origin")
         if data.get("transport", "car") != "car":
             raise ValidationError("This catalog supports car transport only.")
@@ -111,5 +112,6 @@ class PlanRequest:
             ))
         if len({t.id for t in travelers}) != len(travelers):
             raise ValidationError("traveler IDs must be unique.")
+        trip_id = string(data["trip_id"], "trip_id") if "trip_id" in data else ""
         return cls(origin, start, end, budget, energy,
-                   boolean(data.get("allow_repeats", False), "allow_repeats"), tuple(travelers))
+                   boolean(data.get("allow_repeats", False), "allow_repeats"), tuple(travelers), trip_id=trip_id)

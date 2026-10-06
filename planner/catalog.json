@@ -5,7 +5,7 @@
     {
       "id": "shoreline", "title": "Shoreline lake stroll and picnic", "destination": "Shoreline Lake, Mountain View, CA",
       "description": "A short lakeside stroll with plenty of time to sit by the water.",
-      "tags": ["nature", "scenic", "quiet", "walking"], "intensity": 1,
+      "tags": ["nature", "scenic", "photography", "quiet", "walking"], "intensity": 1,
       "activity_minutes": 65, "extra_title": "Unhurried picnic by the lake", "extra_minutes": 35,
       "cost_per_person": 18, "group_cost": 0, "step_free": true, "vegetarian": true,
       "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
@@ -15,7 +15,7 @@
     {
       "id": "baylands", "title": "Baylands birdwatching and picnic", "destination": "Baylands Nature Preserve, Palo Alto, CA",
       "description": "Watch birds from a short marsh-side route, then settle in for a picnic.",
-      "tags": ["nature", "scenic", "quiet", "walking"], "intensity": 1,
+      "tags": ["nature", "scenic", "photography", "quiet", "walking"], "intensity": 1,
       "activity_minutes": 75, "extra_title": "Picnic and sketching break", "extra_minutes": 35,
       "cost_per_person": 18, "group_cost": 0, "step_free": null, "vegetarian": true,
       "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
@@ -51,6 +51,17 @@
       "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
       "drive_minutes": {"Mountain View": 18, "Palo Alto": 10, "Sunnyvale": 25},
       "source_url": "https://www.paloalto.gov/Departments/Community-Services/Parks-Open-Space-Golf-Division/Neighborhood-Parks/Mitchell-Park"
+    },
+    {
+      "id": "gamble-garden", "title": "Gamble Garden gentle walk and picnic", "destination": "Gamble Garden, 1431 Waverley Street, Palo Alto, CA",
+      "description": "Enjoy garden paths and handheld photography, with a picnic at an available table. Check event closures and weekend restroom availability before leaving; no tripods or lawn gatherings.",
+      "tags": ["nature", "gardens", "photography", "scenic", "quiet", "walking"], "intensity": 1,
+      "activity_minutes": 65, "extra_title": "Vegetarian picnic at an available table", "extra_minutes": 35,
+      "cost_per_person": 18, "group_cost": 0, "step_free": null, "vegetarian": true,
+      "max_group_size": 6,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 25, "Palo Alto": 10, "Sunnyvale": 30},
+      "source_url": "https://www.gamblegarden.org/visit/overview/"
     },
     {
       "id": "windy-hill", "title": "Windy Hill longer trail outing", "destination": "Windy Hill Open Space Preserve, Portola Valley, CA",

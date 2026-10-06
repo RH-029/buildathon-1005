@@ -39,10 +39,77 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8001/api/plan `
 ```
 
 `--demo` loads sample Sam/Alex preferences. Without it, the server uses no memories
-unless `PLANNER_MEMORY_MODULE` is configured. Proposed plans are returned only;
+unless `--hosted-memory` or `PLANNER_MEMORY_MODULE` is configured. Proposed plans are returned only;
 planning performs no memory writes. `planner.demo` simulates completed-outing
 feedback through a fake memory port; durable storage and `saveFeedback` belong
 to the memory owner.
+
+## Real Mem0 integration
+
+The published [TravelMemory handoff](../MEMORY.md) is now included from `main`.
+The planner adapter in `hosted_memory.py` subclasses its normalizer to preserve
+native expiration fields, and calls the real `get_memories`/`save_feedback`
+methods. The memory owner's files are unchanged.
+
+Hosted mode requires Python 3.10+ and the memory owner's dependencies:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-memory.txt
+# MEM0_API_KEY is already configured in the ignored .env.local on this machine.
+.venv/bin/python -m planner.server --hosted-memory --cors-origin http://localhost:3000
+```
+
+Send `planner/cloud_request.json` to `/api/plan`. It uses `demo-jamie` and
+`demo-taylor`, with no repeated interest or dietary fields. The adapter retrieves
+all user-scoped profile pages as well as semantic search results before each
+plan. A failed or incomplete profile read fails the plan; hard requirements
+are never inferred solely from the top-ranked search result. No memory key is
+returned to the browser. Standard `.env.local` loading honors existing terminal
+environment variables first. Keep the key in that ignored file.
+
+```sh
+.venv/bin/python -m planner.cloud_demo --snapshot   # Read-only hosted plan
+.venv/bin/python -m planner.cloud_demo              # Writes ONE fictional Jamie feedback
+.venv/bin/python -m unittest planner.test_planner planner.test_hosted_memory -v
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+The write demo reuses existing profiles rather than seeding them again. It plans
+in one child process, saves Jamie's clearly labeled fictional completed-outing
+feedback using the real memory module, and plans in a new child process with
+the identical request. It waits for the submitted trip ID to become searchable
+and never retries the write. A `pending` response is not reported as saved.
+The ignored `data/planner-cloud-demo.json` contains a before/after verification
+snapshot, not a local memory database; planning always retrieves from Mem0.
+Repeated write demos deliberately add a new fictional completed visit.
+
+The existing cloud records already request a slower pace, so the first hosted
+plan already has one main activity and a 45-minute margin. The feedback loop
+demonstrates a **new top destination** after a completed visit, while retaining
+those pace requirements. The separate offline demo still shows the two-to-one
+agenda change from new pace feedback.
+
+Verified on October 5, 2026 (Pacific): real hosted reads, one fictional
+`demo-jamie` feedback write, and fresh-process retrieval succeeded. The top
+pick changed from Gamble Garden to Shoreline; all seven cloud assertions passed.
+
+Interpretation is a bounded English/Chinese phrase parser, not an LLM. It
+supports explicit interests, dislikes, rushed/fewer-activity feedback, short
+drives, vegetarian requirements, and step-free requirements. It preserves the
+original text and ID for explanations and never extracts numerical budgets or
+return deadlines. It is not general long-conversation extraction, dietary
+allergy analysis, or automatic resolution of conflicting old/new preferences.
+Keep all hard constraints in structured profile/request fields; new constraint
+types require explicit support before relying on memory interpretation.
+
+Remembered vegetarian/step-free requirements combine with current structured
+requirements using OR: neither ranking nor a false/default request value can
+weaken them. Positive remembered requirements are additive; changing an old
+requirement requires the memory owner to resolve the stored profile. Temporary
+context is applied only when its `trip_id` matches the request and expiration
+covers both now and the outing. Explicit request energy takes priority over
+temporary fatigue. Temporary states never become permanent preferences.
 
 ## UI handoff: POST /api/plan
 
@@ -58,6 +125,7 @@ outside this endpoint. No LLM is required to run this planner.
 | `transport` | `car` only. Other modes return 400 rather than assuming driving. |
 | `energy` | `low`, `medium`, or `high`; applies to this request only. |
 | `allow_repeats` | Boolean; defaults to false. Completed visits lower ranking unless true. |
+| `trip_id` | Optional; must match a temporary memory's trip before that state can apply. |
 | `travelers` | 1–8 people with unique `id`, display `name`, and optional `interests`. |
 | Traveler `budget_per_person` | Optional tighter individual cap; the strictest cap wins. |
 | Traveler `max_drive_minutes` | Integer, maximum for **each** direction; default 180. |
@@ -66,8 +134,8 @@ outside this endpoint. No LLM is required to run this planner.
 | Traveler `requires_vegetarian` | Boolean; requires a vegetarian picnic plan. |
 
 Supported interest tags: `nature`, `scenic`, `quiet`, `art`, `food`, `walking`,
-`hiking`, `social`. The small catalog currently covers nature, scenic, quiet,
-walking, hiking, and social activities. Unsupported fields and requirements
+`hiking`, `social`, `gardens`, `photography`. The small catalog currently covers
+nature, scenic, quiet, walking, hiking, social, garden, and photography activities. Unsupported fields and requirements
 return 400 so a hard constraint is never silently ignored.
 
 Response fields:
@@ -129,7 +197,7 @@ Normalize Mem0 search results into this contract (do not return the raw
 ]
 ```
 
-Use Mem0 user-scoped search and map trusted `user_id`/metadata to `traveler_id`.
+For a custom provider, use Mem0 user-scoped search and map trusted `user_id`/metadata to `traveler_id`.
 The planner drops wrong-user records. `text` (or raw Mem0 `memory`) supplies the
 explanation; the adapter supplies structured signals:
 
@@ -140,18 +208,23 @@ explanation; the adapter supplies structured signals:
   in the request.
 - A `kind: experience`, `status: completed` record with `place_id` establishes
   a completed visit. Feedback also requires `status: completed`.
-- `kind: preference` records need no completion status. Temporary and proposed
-  records are ignored. Keep current fatigue in `energy`, not permanent signals.
+- `kind: preference` records need no completion status. Proposed records are
+  ignored. Temporary states require the matching trip and a valid expiration.
 
-Natural-language extraction belongs to the memory adapter. The planner never
-guesses hard constraints from free text. Store proposed plans separately from
-completed experiences. Only trusted, confirmed feedback should become signals.
+The planner now interprets supported raw traveler phrases as described above;
+custom providers can also supply explicit signals. Actual `TravelMemory` rows
+with `metadata.kind: trip_feedback` and a `trip_id` map to completed feedback
+by the memory module's contract. Explicit proposed/pending status takes priority
+and is excluded. A visit requires a completed experience's `place_id` or explicit
+completed feedback identifying it with metadata or a `place_id: ...` marker;
+an ambiguous mention of a garden never establishes a specific visit. Store
+proposed plans separately from completed experiences.
 
 Hard constraints filter first. Then each person receives equal ranking weight,
 independent of their memory count, with extra weight for the least satisfied
 traveler. Negative feedback affects its author's score; it does not become a
 group preference. A slower pace is an explicit group accommodation, attributed
-   to the traveler who requested it. Repeats are deprioritized, not hard-excluded.
+to the traveler who requested it. Repeats are deprioritized, not hard-excluded.
 
 ## Current travel source
 
