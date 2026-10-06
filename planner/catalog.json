@@ -1,0 +1,66 @@
+{
+  "data_status": "sample",
+  "notice": "Curated demo outings. All durations, prices, hours, accessibility, and driving estimates are sample assumptions, not live venue verification. Check linked official sources before leaving. Food is a bring-your-own picnic; estimates include food and a driving allowance.",
+  "experiences": [
+    {
+      "id": "shoreline", "title": "Shoreline lake stroll and picnic", "destination": "Shoreline Lake, Mountain View, CA",
+      "description": "A short lakeside stroll with plenty of time to sit by the water.",
+      "tags": ["nature", "scenic", "quiet", "walking"], "intensity": 1,
+      "activity_minutes": 65, "extra_title": "Unhurried picnic by the lake", "extra_minutes": 35,
+      "cost_per_person": 18, "group_cost": 0, "step_free": true, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 15, "Palo Alto": 20, "Sunnyvale": 20},
+      "source_url": "https://www.mountainview.gov/our-city/departments/community-services/shoreline-at-mountain-view"
+    },
+    {
+      "id": "baylands", "title": "Baylands birdwatching and picnic", "destination": "Baylands Nature Preserve, Palo Alto, CA",
+      "description": "Watch birds from a short marsh-side route, then settle in for a picnic.",
+      "tags": ["nature", "scenic", "quiet", "walking"], "intensity": 1,
+      "activity_minutes": 75, "extra_title": "Picnic and sketching break", "extra_minutes": 35,
+      "cost_per_person": 18, "group_cost": 0, "step_free": null, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 22, "Palo Alto": 15, "Sunnyvale": 30},
+      "source_url": "https://www.paloalto.gov/Departments/Community-Services/Parks-Open-Space-Golf-Division/Neighborhood-Parks/Baylands-Nature-Preserve"
+    },
+    {
+      "id": "rancho", "title": "Rancho San Antonio gentle nature walk", "destination": "Rancho San Antonio County Park, Cupertino, CA",
+      "description": "Stay near the lower park on a gentle out-and-back; skip the longer hill trails.",
+      "tags": ["nature", "walking", "quiet"], "intensity": 1,
+      "activity_minutes": 80, "extra_title": "Bring-your-own picnic", "extra_minutes": 35,
+      "cost_per_person": 18, "group_cost": 0, "step_free": null, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 25, "Palo Alto": 30, "Sunnyvale": 20},
+      "source_url": "https://www.openspace.org/preserves/rancho-san-antonio"
+    },
+    {
+      "id": "rengstorff", "title": "Rengstorff Park lawn afternoon", "destination": "Rengstorff Park, Mountain View, CA",
+      "description": "Bring a blanket, enjoy a small park wander, and spend time together on the lawn.",
+      "tags": ["quiet", "social", "walking"], "intensity": 0,
+      "activity_minutes": 60, "extra_title": "Picnic and conversation", "extra_minutes": 35,
+      "cost_per_person": 15, "group_cost": 0, "step_free": true, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 10, "Palo Alto": 20, "Sunnyvale": 18},
+      "source_url": "https://www.mountainview.gov/our-city/departments/community-services/parks-and-trails"
+    },
+    {
+      "id": "mitchell", "title": "Mitchell Park picnic and relaxed stroll", "destination": "Mitchell Park, Palo Alto, CA",
+      "description": "A low-effort park afternoon with a picnic and a short paved-path wander.",
+      "tags": ["social", "quiet", "walking"], "intensity": 0,
+      "activity_minutes": 70, "extra_title": "A second conversation break", "extra_minutes": 35,
+      "cost_per_person": 15, "group_cost": 0, "step_free": true, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 18, "Palo Alto": 10, "Sunnyvale": 25},
+      "source_url": "https://www.paloalto.gov/Departments/Community-Services/Parks-Open-Space-Golf-Division/Neighborhood-Parks/Mitchell-Park"
+    },
+    {
+      "id": "windy-hill", "title": "Windy Hill longer trail outing", "destination": "Windy Hill Open Space Preserve, Portola Valley, CA",
+      "description": "A longer trail outing for a group that actively wants a strenuous hike.",
+      "tags": ["nature", "scenic", "hiking"], "intensity": 3,
+      "activity_minutes": 150, "extra_title": "Trailhead picnic", "extra_minutes": 35,
+      "cost_per_person": 22, "group_cost": 0, "step_free": false, "vegetarian": true,
+      "sample_open": "09:00", "sample_close": "17:00", "weekdays": [0, 1, 2, 3, 4, 5, 6],
+      "drive_minutes": {"Mountain View": 40, "Palo Alto": 30, "Sunnyvale": 45},
+      "source_url": "https://www.openspace.org/preserves/windy-hill"
+    }
+  ]
+}
